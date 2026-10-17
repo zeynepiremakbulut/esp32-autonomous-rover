@@ -58,5 +58,13 @@ The script attempts to keep non-ROS UI functionality available when ROS imports 
 - Lift the wheels off the ground for initial motor-direction tests.
 - Test the stop command and communication-loss behavior before autonomous runs.
 - Keep a physical way to disconnect motor power.
-- Never commit Wi-Fi passwords, private IP/network details that you do not want public, or team-owned competition code.
+- Never commit Wi-Fi passwords or private network details that you do not want public.
 - LiDAR-only mapping has no wheel odometry or IMU input in the current Cartographer configuration; drift and pose jumps are known limitations.
+
+## Development notes
+
+The [`docs/development-log.md`](docs/development-log.md) records concrete engineering challenges and the diagnostic lessons behind them. It distinguishes observed symptoms from confirmed root causes rather than claiming every issue has a proven fix.
+
+## Demo media
+
+Add your own rover photo, interface screenshot and short clips/GIFs to `media/`. Do not add mock screenshots or claim unrecorded test results.
