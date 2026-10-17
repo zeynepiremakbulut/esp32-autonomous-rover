@@ -18,7 +18,7 @@ A personal robotics project combining an ESP32-S3 mobile platform, UDP motor com
 
 ```text
 esp32-autonomous-rover/
-├── ubuntu/rover_manuel_otonom_harita.py
+├── ubuntu/rover.py
 ├── esp32/rover_firmware.ino
 ├── esp32/README.md
 ├── docs/
@@ -60,11 +60,3 @@ The script attempts to keep non-ROS UI functionality available when ROS imports 
 - Keep a physical way to disconnect motor power.
 - Never commit Wi-Fi passwords or private network details that you do not want public.
 - LiDAR-only mapping has no wheel odometry or IMU input in the current Cartographer configuration; drift and pose jumps are known limitations.
-
-## Development notes
-
-The [`docs/development-log.md`](docs/development-log.md) records concrete engineering challenges and the diagnostic lessons behind them. It distinguishes observed symptoms from confirmed root causes rather than claiming every issue has a proven fix.
-
-## Demo media
-
-Add your own rover photo, interface screenshot and short clips/GIFs to `media/`. Do not add mock screenshots or claim unrecorded test results.
