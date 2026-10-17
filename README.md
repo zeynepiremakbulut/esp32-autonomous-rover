@@ -1,62 +1,106 @@
-# ESP32-S3 Rover — Manual Control, LiDAR and ROS 2 Mapping
+# ESP32-S3-Based Autonomous Ground Robot
 
-A personal robotics project combining an ESP32-S3 mobile platform, UDP motor commands, a Vorwerk/Kobold VR100 LiDAR stream, a Python/Tkinter control interface and optional ROS 2 Cartographer mapping. This repository documents both the implementation and the debugging lessons learned while integrating hardware and software.
+This project covers computer-based control of an ESP32-S3-powered four-wheel ground robot, live LiDAR visualization, 2D mapping with ROS 2, and experiments with navigating toward a goal selected on the map. The embedded firmware, Python control interface, and ROS 2 components work together.
 
-> **Status:** Development project. Features are implemented in source, but behavior depends on the physical robot, network, LiDAR orientation and ROS 2 environment. Do not interpret the presence of a feature as a claim that every scenario is fully validated.
+## Project Features
 
-## Features in the current Python source
+- Manual driving through a desktop interface
+- Communication with the ESP32-S3 over Wi-Fi and UDP
+- Receiving and visualizing data from a Vorwerk/Kobold VR100 LiDAR
+- Publishing LiDAR data as ROS 2 `LaserScan` messages
+- 2D mapping with Cartographer ROS and use of TF transforms
+- Selecting a goal on the map
+- Grid-based path planning using a custom Python A* implementation
+- Path following, obstacle checks, and replanning when needed
+- Safety checks intended to stop the motors if communication is lost
 
-- Tkinter control interface for manual and autonomous operation
-- UDP communication with ESP32 (`192.168.1.3` by default; motor port `4210`, LiDAR port `4211`)
-- Live LiDAR visualization and conversion to ROS 2 `sensor_msgs/LaserScan`
-- Optional Cartographer 2D mapping; map and TF integration
-- Grid-based A* path planning for map goals
-- Obstacle-aware goal navigation, steering correction, replanning and stuck-recovery logic
-- Link-loss handling intended to stop the rover when configured conditions are met
+## Repository Structure
 
-## Repository layout
+| Folder / section | Contents and purpose |
+|---|---|
+| **`ubuntu/`** | The Python interface and robot-control logic running on an Ubuntu computer. This section covers manual driving, LiDAR visualization, ROS 2 connectivity, selecting a goal on the map, and A*-based path planning. |
+| **`esp32/`** | Embedded software running on the ESP32-S3, along with instructions for using the firmware. It covers Wi-Fi connectivity, UDP commands, motor-driver control, and forwarding LiDAR data. |
+| **`docs/`** | Technical documentation covering system architecture, installation and first-run steps, issues encountered during development, known limitations, and the test plan/results. |
+| **`tests/`** | A test plan and checklist for evaluating the hardware and software in a controlled manner. |
+| **`media/`** | A section reserved for real photos of the robot, control-interface screenshots, and recordings of manual driving, autonomous movement, LiDAR data, and mapping. Add these materials as they become available. |
+| **Configuration and documentation at the repository root** | Information about Python dependencies, Git ignore settings, and license selection. |
 
-```text
-esp32-autonomous-rover/
-├── ubuntu/rover.py
-├── esp32/rover_firmware.ino
-├── esp32/README.md
-├── docs/
-│   ├── architecture.md
-│   ├── setup.md
-│   ├── development-log.md
-│   ├── known-limitations.md
-│   └── test-results.md
-├── tests/test_plan.md
-├── media/README.md
-├── requirements.txt
-├── .gitignore
-└── LICENSE-CHOICE.md
-```
+## Technologies and Software
 
-## Hardware (as currently described)
+| Technology | Purpose |
+|---|---|
+| ESP32-S3 and Arduino/C++ | Motor control, Wi-Fi connectivity, and LiDAR data transmission |
+| TB6612FNG | Driving the DC motors |
+| Wi-Fi and UDP | Command and data communication between the computer and ESP32-S3 |
+| Vorwerk/Kobold VR100 LiDAR | Scanning distances around the robot |
+| Ubuntu 22.04 | ROS 2 development environment |
+| ROS 2 Humble | Sensor messages, map data, and TF transforms |
+| Cartographer ROS | 2D mapping and pose tracking |
+| Python 3 | Control interface and autonomous movement logic |
+| Tkinter / ttk | Desktop control interface |
+| NumPy | Numerical operations and working with map/perception data |
+| Pillow (optional) | Helps render map drawings more smoothly |
+| A* (custom Python implementation) | Computing a path to a goal on a grid map |
+| `nav2_map_server` tools | Saving maps; this alone does not mean the Nav2 navigation stack is being used |
 
-- ESP32-S3 board
-- Two TB6612FNG motor-driver boards controlling four drive channels/motors
-- Vorwerk Kobold VR100 LiDAR (not an RPLIDAR A1)
-- Separate motor and logic power arrangements; verify all grounds and voltage limits before testing
+## Hardware and Power Setup
 
-The included firmware copy has only had its Wi-Fi SSID/password replaced with placeholders; no other source-code edits were intentionally made. Enter credentials locally and do not commit them. See [`esp32/README.md`](esp32/README.md).
+- ESP32-S3 development board
+- Two TB6612FNG driver boards for motor control
+- Vorwerk/Kobold VR100 LiDAR (not an RPLIDAR A1)
+- Two LM2596 DC-DC converters, used/tested separately for motor-driver and LiDAR power
+- A separate USB power bank to power the ESP32-S3
 
-## Setup (Ubuntu + ROS 2 Humble)
+During development, approximately 6 V for the motor-driver supply and approximately 3.8 V for the LiDAR supply were discussed. These values should not be treated as verified component requirements. Check the voltage specified by the LiDAR manufacturer and measure the actual converter output. Do not connect the motor supply to the ESP32's 3V3 pin. Check the grounding and wiring of the actual circuit before applying power.
 
-1. Install ROS 2 Humble and source its environment in the same terminal.
-2. Install required ROS packages, including Cartographer ROS and map server where needed.
-3. Install Python dependencies listed in `requirements.txt` (NumPy is used by the ROS integration; Pillow is optional for smoother map rendering).
-4. Confirm the ESP32 IP, host network and UDP ports match the firmware. The Python source currently defaults to `192.168.1.3`.
-5. Run `python3 ubuntu/rover_manuel_otonom_harita.py`.
+## Software Architecture
 
-The script attempts to keep non-ROS UI functionality available when ROS imports fail; mapping features require a correctly sourced ROS 2 environment and installed packages. Exact launch behavior must be verified on the target Ubuntu system.
+1. The Python interface on the computer controls the ESP32-S3 by sending UDP commands over Wi-Fi.
+2. The ESP32-S3 controls the robot's movement through the motor drivers.
+3. LiDAR data received over a serial connection is forwarded from the ESP32-S3 to the computer.
+4. The Python application publishes the LiDAR data as ROS 2 `sensor_msgs/LaserScan` messages.
+5. Cartographer ROS builds a 2D map from LiDAR data. The map is read as an `OccupancyGrid`, and the robot pose is tracked through TF.
+6. When a goal is selected on the map, the custom Python A* implementation computes a path on the grid. Path following and obstacle checking during movement are handled by separate control logic.
 
-## Safety
+The mapping configuration is LiDAR-focused: the current Cartographer configuration does not use wheel odometry or IMU input. As a result, pose and map stability may depend on sensor data and environmental conditions.
 
-- Lift the wheels off the ground for initial motor-direction tests.
-- Test the stop command and communication-loss behavior before autonomous runs.
-- Keep a physical way to disconnect motor power.
-- Never commit Wi-Fi passwords or private network details that you do not want public.
-- LiDAR-only mapping has no wheel odometry or IMU input in the current Cartographer configuration; drift and pose jumps are known limitations.
+## Key Settings
+
+- Default ESP32-S3 IP address: `192.168.1.3`
+- Motor-control UDP port: `4210`
+- LiDAR-data UDP port: `4211`
+- LiDAR serial communication: `115200` baud
+- Map resolution: approximately `0.03 m/cell`
+- Goal-reached tolerance: approximately `0.15 m`
+
+These values reflect the current defaults and configuration in the source code. Verify them for your own network and physical setup.
+
+## Installation and Quick Start
+
+1. Set up ROS 2 Humble on Ubuntu 22.04 and source the ROS environment in the terminal.
+2. Install Cartographer ROS and the ROS packages required for saving maps.
+3. Install the Python dependencies. NumPy is used; Pillow is optional for map rendering.
+4. Check the ESP32-S3 IP address, UDP ports, and that the computer and robot are on the same network.
+5. Verify the LiDAR data stream first; test the motors afterward at low speed.
+6. Launch the Python interface in the Ubuntu environment. The ROS 2 environment must be sourced correctly for mapping features to work.
+
+Detailed installation and safe first-run instructions are provided in the `docs/` section.
+
+## Photos and Videos
+
+The `media/` section is reserved for real recordings to be added as the project progresses. Potential additions include:
+
+- Top-down and general/side-view photos of the robot
+- A screenshot of the control interface
+- A manual-driving video
+- An autonomous-movement video
+- A recording showing LiDAR data changing while the robot moves
+- A mapping video
+
+## Safety Notes
+
+- Raise the wheels off the ground and use low speed for initial motor tests.
+- Test the stop command and the behavior when communication is lost before operating the motors.
+- Keep a way to physically disconnect motor power.
+- Do not add Wi-Fi passwords or network details you do not want to share to the repository.
+- Since LiDAR-focused mapping does not use odometry/IMU input, pose drift may occur. Computing a path to the goal does not, by itself, correct pose estimation.
