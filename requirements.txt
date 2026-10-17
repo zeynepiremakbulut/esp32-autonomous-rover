@@ -1,5 +1,0 @@
-# Optional convenience dependencies for the Ubuntu Python application.
-# ROS 2 Python packages should be installed from the ROS 2 apt repositories,
-# not from pip. NumPy is needed for map processing/path planning.
-numpy
-Pillow
