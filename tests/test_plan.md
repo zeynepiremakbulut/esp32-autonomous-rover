@@ -1,6 +1,6 @@
 # Manual test plan
 
-Use a clear area, keep a physical power cutoff available, and lift the wheels for initial motor tests. Capture a video or terminal log for failures.
+Use a clear area, keep a physical power cutoff available, and lift the wheels for initial motor tests.
 
 1. **Power and Wi-Fi:** verify stable ESP32 startup and address. Repeat with router unavailable; document whether firmware remains blocked.
 2. **Motor mapping:** test each channel separately and label physical wheel/direction.
