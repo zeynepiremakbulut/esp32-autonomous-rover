@@ -5,7 +5,7 @@ ESP32 Rover: Manuel + Otonom sürüş + Canlı LiDAR + Cartographer haritalama
 Gereksinimler (haritalama sekmesi için, ROS 2 ortamı source edilmiş olmalı):
     sudo apt install ros-$ROS_DISTRO-cartographer-ros ros-$ROS_DISTRO-nav2-map-server
     source /opt/ros/$ROS_DISTRO/setup.bash
-    python3 rover_manuel_otonom_harita.py
+    python3 rover.py
 
 ROS 2 yoksa script yine çalışır; sadece "Harita" sekmesi devre dışı kalır.
 """
