@@ -23,7 +23,6 @@ This project covers computer-based control of an ESP32-S3-powered four-wheel gro
 | **`docs/`** | Technical documentation covering system architecture, installation and first-run steps, issues encountered during development, known limitations, and the test plan/results. |
 | **`tests/`** | A test plan and checklist for evaluating the hardware and software in a controlled manner. |
 | **`media/`** | A section reserved for real photos of the robot, control-interface screenshots, and recordings of manual driving, autonomous movement, LiDAR data, and mapping. Add these materials as they become available. |
-| **Configuration and documentation at the repository root** | Information about Python dependencies, Git ignore settings, and license selection. |
 
 ## Technologies and Software
 
