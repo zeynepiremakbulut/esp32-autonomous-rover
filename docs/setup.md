@@ -13,7 +13,7 @@ Example package installation (confirm package names for your installed ROS distr
 sudo apt update
 sudo apt install ros-humble-cartographer-ros ros-humble-nav2-map-server python3-numpy python3-pil
 source /opt/ros/humble/setup.bash
-python3 ubuntu/rover_manuel_otonom_harita.py
+python3 ubuntu/rover.py
 ```
 
 ## Hardware power arrangement
