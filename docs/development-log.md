@@ -1,7 +1,5 @@
 # Development log: problems, debugging and lessons
 
-This is a project-development record, not a claim that every root cause has been conclusively isolated. Symptoms explicitly discussed during development are marked **Observed/reported**; possible explanations are marked **Hypothesis to verify**. Add dates and evidence as new tests are run.
-
 ## 1. Map pose jumps or drifts after reaching a goal
 
 **Observed/reported:** during goal navigation, the robot could reach the selected point and stop, then its displayed position would start to shift. At times, the map appeared to open up or show a newly entered room even though the robot was not intentionally moving; the issue sometimes disappeared and returned.
