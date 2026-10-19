@@ -1,6 +1,7 @@
 # ESP32-S3-Based Autonomous Ground Robot
 
 This project covers computer-based control of an ESP32-S3-powered four-wheel ground robot, live LiDAR visualization, 2D mapping with ROS 2, and experiments with navigating toward a goal selected on the map. The embedded firmware, Python control interface, and ROS 2 components work together.
+<img width="4032" height="3024" alt="rover" src="https://github.com/user-attachments/assets/262a5a01-8567-4ebd-ae8e-d66d2d9a6bcd" />
 
 ## Project Features
 
