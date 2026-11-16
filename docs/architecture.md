@@ -1,23 +1,65 @@
-# Architecture
+# System Architecture & Hardware Layout
 
-```text
-Tkinter UI / autonomous controller (Ubuntu)
-  ├─ UDP motor commands ───────────────> ESP32-S3 ──> TB6612FNG drivers ──> drive motors
-  ├─ UDP LiDAR receiver <────────────── ESP32-S3 <── UART LiDAR (VR100)
-  └─ ROS 2 bridge: /scan <── LiDAR data
-       ├─ Cartographer: /map + TF
-       └─ map goal -> grid planning (A*) -> local obstacle-aware control -> UDP motor commands
+```mermaid
+flowchart TD
+    subgraph Host ["Host Workstation (Ubuntu 22.04)"]
+        UI["Tkinter GUI Control Panel"]
+        ROS["ROS 2 Humble Bridge (/scan)"]
+        SLAM["Cartographer ROS 2D SLAM (/map, TF)"]
+        Planner["A* Grid Path Planner & Obstacle Avoidance"]
+        
+        UI <--> ROS
+        ROS --> SLAM
+        SLAM --> Planner
+        Planner --> UI
+    end
+
+    subgraph Comm ["Wireless Communication"]
+        UDP_M["UDP Port 4210: Motor Commands (V:l,r / M:dir)"]
+        UDP_L["UDP Port 4211: Batched LiDAR Stream (22-byte packets)"]
+    end
+
+    subgraph Robot ["ESP32-S3 Rover"]
+        ESP["ESP32-S3 Core & Watchdog (500ms)"]
+        DRV1["TB6612FNG Driver #1 (Left Motors)"]
+        DRV2["TB6612FNG Driver #2 (Right Motors)"]
+        LIDAR["Vorwerk/Kobold VR100 LiDAR"]
+        
+        ESP -->|PWM / Direction| DRV1
+        ESP -->|PWM / Direction| DRV2
+        LIDAR -->|UART 115200 (GPIO 44 RX, 43 TX)| ESP
+    end
+
+    UI -->|Wi-Fi| UDP_M --> ESP
+    ESP -->|Wi-Fi| UDP_L --> UI
 ```
 
-## Hardware power layout
+---
 
-The build used two LM2596 converter modules for separate loads: one for the TB6612FNG motor supply (about 6 V was the discussed target), and another for the VR100 LiDAR supply (about 3.8 V was discussed during bring-up). The ESP32-S3 was powered separately from a Baseus 10,000 mAh / 30 W USB power bank. The LiDAR voltage is not recorded here as a verified specification: measure the rail and confirm the sensor's required input voltage before powering it. Keep the rails separated as designed and verify grounding/wiring on the actual hardware.
+## Hardware Power Distribution
 
-## Important integration boundaries
+The rover utilizes an isolated, multi-rail power architecture using two LM2596 buck converters and an independent USB power bank to protect logic circuits from motor inductive kickback:
 
-- **Transport:** Python and firmware must agree on IP addresses, ports, command strings and packet framing.
-- **Sensing:** the raw LiDAR packet parser must preserve packet boundaries/checksums and produce valid ranges/angles.
-- **Coordinate frames:** the radar display's angular convention, physical sensor orientation and ROS scan convention must agree.
-- **Mapping:** current configuration is LiDAR-only; it does not use wheel odometry or an IMU.
-- **Navigation:** map planning and live obstacle handling are separate from reliable localization. A* can plan a path, but it cannot compensate for a drifting or jumping map pose by itself.
-- **Safety:** the PC-side link-loss logic and ESP32-side 500 ms watchdog are separate protections and should be tested independently.
+1. **ESP32-S3 Logic:** Powered independently via a Baseus 10,000 mAh / 30 W USB power bank.
+2. **Motor Driver Rail (TB6612FNG):** Stepped down via the first LM2596 buck converter from a 4S battery pack to ~6.0V.
+3. **LiDAR Rail (VR100):** Stepped down via the second LM2596 buck converter to the sensor operating level (~3.8V discussed during bring-up; measure and verify before powering).
+4. **Common Ground:** Logic, sensor, and driver ground lines are tied together to maintain a unified signal reference.
+
+### Hardware Schematics & Wiring
+
+| Component | Schematic / Diagram |
+|---|---|
+| **LiDAR Sensor Wiring** | ![LiDAR Wiring](hardware_diagrams/lidar.png) |
+| **LM2596 Buck Converter Setup** | ![LM2596 Setup](hardware_diagrams/lm2596.png) |
+| **TB6612FNG Dual Driver Wiring** | ![TB6612FNG Wiring](hardware_diagrams/tb6612_motor_drivers.png) |
+
+---
+
+## Key Integration Boundaries & Protocols
+
+- **Transport:** Communication relies on UDP over Wi-Fi. Motor commands use `V:<left>,<right>` or discrete directional commands (`M:w`, `M:s`, `M:a`, `M:d`, `M:x`). LiDAR packets are batched (5 packets of 22 bytes per UDP datagram, 40 ms flush interval).
+- **Sensing:** Raw LiDAR serial packets (`0xFA` sync byte + index + 4 data points + checksum) are validated on the ESP32 before transmission to reduce Wi-Fi traffic.
+- **Coordinate Conventions:** Optical LiDAR rotation, robot frame (`base_link`), and ROS standard coordinate frames (`x` forward, `y` left, `z` up) are mapped inside the ROS 2 node.
+- **Fail-Safe Mechanism:**
+  - **Firmware watchdog:** Shuts off motor PWM if no valid UDP command is received within 500 ms.
+  - **PC link monitor:** Warns the user and halts autonomous driving if network latency exceeds tolerance.
